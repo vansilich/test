@@ -5,6 +5,7 @@ use yii\grid\ActionColumn;
 use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\Url;
+use yii\widgets\ListView;
 
 /** @var yii\web\View $this */
 /** @var \app\modules\order\models\OrderSearch $searchModel */
@@ -21,8 +22,10 @@ $this->params['breadcrumbs'][] = $this->title;
         'tableOptions' => [
             'class' => 'table order-table'
         ],
+        'summary' => sprintf('{begin} %s {end} %s {totalCount}', Yii::t('app', 'to'), Yii::t('app', 'of')),
+        'summaryOptions' => ['class' => 'col-sm-4 pagination-counters'],
         'dataProvider' => $dataProvider,
-        'layout' => "{errors}\n{items}\n{pager}\n{summary}",
+        'layout' => "{errors}\n{items}\n<div class=\"col-sm-8\"><nav>{pager}</nav></div>\n{summary}",
         'columns' => [
             'id',
             'user_id',
