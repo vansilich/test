@@ -21,6 +21,12 @@ services:
       - traefik.http.services.app-service.loadbalancer.server.port=80
     extra_hosts:
       - host.docker.internal:host-gateway
+    environment:
+      DB_APP_HOST: app_db
+      DB_APP_USERNAME: ${DB_USER}
+      DB_APP_PASSWORD: ${DB_USER_PASSWORD}
+      DB_APP_DB_NAME: ${DB_DATABASE}
+      DB_APP_PORT: 3306
     networks:
       - indocker-app-network
 
