@@ -11,4 +11,4 @@
 * * `php yii migrate --interactive=0` - запускаем миграции
 * * `php yii seed/raw-all` - сидируем таблицы
 
-Проект будет доступен по адресу https://app.indocker.app
+Проект будет доступен по адресу https://app.indocker.app/order/default/index
