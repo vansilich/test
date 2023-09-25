@@ -39,21 +39,3 @@ COPY ./sites-enabled /etc/apache2/sites-enabled
 COPY ./mods-enabled/php.conf /etc/apache2/mods-enabled/php.conf
 
 RUN cp /etc/apache2/mods-available/rewrite.load /etc/apache2/mods-enabled/rewrite.load
-
-# === DEV ===
-FROM apache AS dev
-
-RUN pecl install xdebug && docker-php-ext-enable xdebug
-# Enable XDebug
-ADD xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
-
-USER www-data
-WORKDIR /var/www/html
-# === /DEV ===
-
-# === PROD ===
-FROM apache AS prod
-
-USER www-data
-WORKDIR /var/www/html
-# === /PROD ===
