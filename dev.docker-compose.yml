@@ -1,0 +1,62 @@
+version: '3.8'
+
+volumes:
+  app_db-data: {}
+
+networks:
+  app:
+    name: app
+  indocker-app-network:
+    external: true
+
+services:
+  apache-php:
+    build:
+      target: dev
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=indocker-app-network
+      - traefik.http.routers.app-router.rule=Host(`app.indocker.app`)
+      - traefik.http.routers.app-router.service=app-service
+      - traefik.http.services.app-service.loadbalancer.server.port=80
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - indocker-app-network
+
+  traefik:
+    image: quay.io/indocker/app:1
+    container_name: indocker.app
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - app
+      - indocker-app-network
+
+  mysql:
+    platform: ${PLATFORM}
+    image: mysql:8.0.34-debian
+    container_name: app_db
+    command: [
+      'mysqld',
+      '--collation-server=utf8_general_ci',
+      '--character-set-server=utf8',
+      '--log-bin=mysql-bin',
+      '--binlog-format=row',
+      '--binlog-row-image=full'
+    ]
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_USER_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_ROOT_HOST: '*'
+    ports:
+      - ${DB_EXTERNAL_PORT}:3306
+    volumes:
+      - app_db-data:/var/lib/mysql
+    networks:
+      - app

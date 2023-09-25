@@ -1,0 +1,26 @@
+version: '3.8'
+
+networks:
+  app:
+    name: app
+
+services:
+  apache-php:
+    container_name: app_apache-php
+    restart: unless-stopped
+    build:
+      context: ./apache-php
+      dockerfile: apache-php.Dockerfile
+      args:
+        - UID=${UID:-1000}
+        - GID=${GID:-1000}
+    volumes:
+      - ./apache-php/htdocs:/var/www/html
+    networks:
+      - app
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
