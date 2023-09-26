@@ -153,10 +153,8 @@ class OrderSearch extends Order
             return;
         }
 
-        $previousParams['currFilterByStatus'] = $previousParams['currFilterByStatus'] ?? null;
-
         // if changed from last call
-        if ($this->currFilterByStatus !== $previousParams['currFilterByStatus']) {
+        if (isset($previousParams['currFilterByStatus']) && $this->currFilterByStatus !== $previousParams['currFilterByStatus']) {
 
         }
 

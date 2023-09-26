@@ -6,7 +6,6 @@ use app\modules\order\models\Order;
 use app\modules\order\models\OrderSearch;
 use yii\grid\GridView;
 use yii\helpers\Html;
-use yii\helpers\Url;
 use yii\widgets\ActiveForm;
 
 /** @var yii\web\View $this */
@@ -32,7 +31,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 $status = $item['title'];
                 $status = mb_ucfirst($status, mb_detect_encoding($status));
         ?>
-            <li class="<?= $item['value'] === $searchModel->currFilterByStatus ? 'active' : '' ?>">
+            <li class="<?= (string)$item['value'] === $searchModel->currFilterByStatus ? 'active' : '' ?>">
                 <a href="">
                     <?php $form = ActiveForm::begin(['method' => 'get']) ?>
                         <?= Html::hiddenInput('OrderSearch[currFilterByStatus]', $item['value']) ?>
@@ -87,16 +86,30 @@ $this->params['breadcrumbs'][] = $this->title;
                 'header' => $this->render('/widgets/GridView/_header-sort-column', [
                     'dataProvider' => $dataProvider,
                     'title' => Yii::t('app', 'Service'),
-                    'content' => (function() use ($searchModel, $dataProvider): array {
-                        $result = [];
-                        $result[] = '<a href="">' . Yii::t('app', 'All') . ' (' . $dataProvider->getTotalCount() . ')</a>';
+                    'itemView' => function() use ($searchModel, $dataProvider): array {
+                        $result = [
+                            // '<a href="">' . 
+                            //     ActiveForm::begin(['method' => 'get']) .
+                            //         Html::hiddenInput('OrderSearch[currFilterByService]', null) .
+                            //         Html::submitButton(
+                            //             Yii::t('app', 'All') . ' (' . $dataProvider->getTotalCount() . ')', 
+                            //             ['style' => 'border: none; background: none']
+                            //         ) .
+                            //     ActiveForm::end() .
+                            // '</a>'
+                        ];
+
                         foreach ($searchModel->serviceWithOrdersCnt as $service) {
                             $result[] = '
-                                <a href=""><span class="label-id">' . Html::encode($service['orders_cnt']) . '</span> '. Html::encode($service['name']) . '</a>
-                            ';
+                                <a href="">
+                                    <span class="label-id">' . 
+                                        Html::encode($service['orders_cnt']) . 
+                                    '</span> ' . 
+                                    Html::encode($service['name']) . 
+                                '</a>';
                         }
                         return $result;
-                    })()
+                    }
                 ]),
                 'headerOptions' => ['class' => 'dropdown-th'],
                 'content' => function (Order $model, $key, $index, $column){
