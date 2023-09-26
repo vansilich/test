@@ -3,6 +3,7 @@
 namespace app\modules\order\models;
 
 use Yii;
+use yii\db\ActiveQuery;
 
 /**
  * This is the model class for table "orders".
@@ -24,6 +25,16 @@ class Order extends \yii\db\ActiveRecord
     public static function tableName()
     {
         return 'orders';
+    }
+
+    public function getUser(): ActiveQuery
+    {
+        return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    public function getService(): ActiveQuery
+    {
+        return $this->hasOne(Service::class, ['id' => 'service_id']);
     }
 
     /**
