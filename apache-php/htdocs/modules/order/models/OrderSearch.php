@@ -13,15 +13,20 @@ use yii\db\ActiveQuery;
 class OrderSearch extends Order
 {
 
-    public ?string $searchText = null;
-
     public ?string $currFilterByStatus = null;
     public array $filterByStatusVariants;
 
+    public ?string $searchText = null;
     public int $searchCategory;
     public array $searchCategoryVariants;
 
-    public array $serviceWithOrdersCnt = [];
+    public ?string $currFilterByService = null;
+
+    public ?string $currFilterByMode = null;
+
+    public array $servicesByOrdersCount = [];
+    public array $servicesMapById = [];
+    public int $servicesCount = 0;
 
     public function __construct($config = [])
     {
@@ -44,13 +49,24 @@ class OrderSearch extends Order
         parent::__construct($config);
     }
 
+    public function getSearchState(): array
+    {
+        return [
+            'currFilterByStatus' => $this->currFilterByStatus,
+            'searchText' => $this->searchText,
+            'searchCategory' => $this->searchCategory,
+            'currFilterByService' => $this->currFilterByService,
+            'currFilterByMode' => $this->currFilterByMode,
+        ];
+    }
+
     /**
      * {@inheritdoc}
      */
     public function rules()
     {
         return [
-            [['searchText', 'currFilterByStatus'], 'string'],
+            [['searchText', 'currFilterByStatus', 'currFilterByService', 'currFilterByMode'], 'string'],
             [['searchCategory'], 'integer'],
 
             [['id', 'user_id', 'quantity', 'service_id', 'status', 'created_at', 'mode'], 'integer'],
@@ -79,8 +95,6 @@ class OrderSearch extends Order
     {
         $query = Order::find();
 
-        // add conditions that should always apply here
-
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => [
@@ -96,8 +110,6 @@ class OrderSearch extends Order
         $this->load($params);
 
         if (!$this->validate()) {
-            // uncomment the following line if you do not want to return any records when validation fails
-            // $query->where('0=1');
             return $dataProvider;
         }
 
@@ -105,29 +117,47 @@ class OrderSearch extends Order
         $query->from(self::tableName() . ' order')
             ->joinWith('user')
             ->joinWith('service');
-
-        $this->setupStatusFilter($query, $previousParams['OrderSearch'] ?? []);
-        $this->setupSearchFilter($query);
-
-//        dd($query->createCommand()->rawSql);
-
         $serviceGroupQuery = clone $query;
-        $serviceGroupQuery->select(['services.id', 'services.name', 'COUNT(services.id) orders_cnt'])
-            ->groupBy(['services.id']);
 
-        $this->serviceWithOrdersCnt = $serviceGroupQuery->asArray()->all();
+        $this->applyFilterByStatus($query, $previousParams['OrderSearch'] ?? []);
+        $this->applyFilterBySearch($query, $previousParams['OrderSearch'] ?? []);
+        $this->applyFilterByService($query);
+        $this->applyFilterByMode($query);
+
+        $serviceGroupQuery->select(['services.id', 'services.name', 'COUNT(services.id) orders_cnt'])
+            ->joinWith('service')
+            ->groupBy(['services.id'])
+            ->orderBy(['orders_cnt' => SORT_DESC]);
+
+        $this->applyFilterByMode($serviceGroupQuery);
+
+        foreach ($serviceGroupQuery->asArray()->all() as $item) {
+            $this->servicesByOrdersCount[] = $item;
+            $this->servicesMapById[ $item['id'] ] = $item;
+            $this->servicesCount += $item['orders_cnt'];
+        }
 
         return $dataProvider;
     }
 
-    private function setupSearchFilter(ActiveQuery $query): void
+    private function applyFilterBySearch(ActiveQuery $query, array $previousParams): void
     {
         if ($this->searchText === '' || $this->searchText === null) {
+            if (isset($previousParams['searchText']) && $previousParams['searchText'] !== ''){
+                $this->currFilterByMode = null;
+                $this->currFilterByService = null;
+            }
+
             $this->searchText = null;
+            $this->searchCategory = 0;
+
             return;
         }
 
-        // TODO сбросить все остальные фильтры
+        if (isset($previousParams['searchText']) && $previousParams['searchText'] !== $this->searchText) {
+            $this->currFilterByMode = null;
+            $this->currFilterByService = null;
+        }
 
         switch ($this->searchCategory){
             case 0:
@@ -147,19 +177,47 @@ class OrderSearch extends Order
         }
     }
 
-    private function setupStatusFilter(ActiveQuery $query, array $previousParams): void
+    private function applyFilterByStatus(ActiveQuery $query, array $previousParams): void
     {
-        if ($this->currFilterByStatus === null || $this->currFilterByStatus === '') {
+        if ($this->currFilterByStatus === '' || $this->currFilterByStatus === null) {
+            if (isset($previousParams['currFilterByStatus']) && $previousParams['currFilterByStatus'] !== '') {
+                $this->currFilterByMode = null;
+                $this->currFilterByService = null;
+            }
+
+            $this->currFilterByStatus = null;
             return;
         }
 
-        // if changed from last call
-        if (isset($previousParams['currFilterByStatus']) && $this->currFilterByStatus !== $previousParams['currFilterByStatus']) {
-
+        if (isset($previousParams['currFilterByStatus']) && $previousParams['currFilterByStatus'] !== $this->currFilterByStatus) {
+            $this->currFilterByMode = null;
+            $this->currFilterByService = null;
         }
 
         $this->status = $this->currFilterByStatus;
         $query->andFilterWhere(['order.status' => $this->status]);
+    }
+
+    private function applyFilterByService(ActiveQuery $query): void
+    {
+        if ($this->currFilterByService === '' || $this->currFilterByService === null) {
+            $this->currFilterByService = null;
+            return;
+        }
+
+        $this->service_id = $this->currFilterByService;
+        $query->andFilterWhere(['order.service_id' => $this->service_id]);
+    }
+
+    private function applyFilterByMode(ActiveQuery $query): void
+    {
+        if ($this->currFilterByMode === '' || $this->currFilterByMode === null) {
+            $this->currFilterByMode = null;
+            return;
+        }
+
+        $this->mode = $this->currFilterByMode;
+        $query->andFilterWhere(['order.mode' => $this->mode]);
     }
 
 }

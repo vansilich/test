@@ -4,7 +4,7 @@
 use yii\widgets\ListView;
 
 /** @var string $title */
-/** @var callable $itemView */
+/** @var string $itemView */
 ?>
 
 <div class="dropdown">
@@ -13,20 +13,8 @@ use yii\widgets\ListView;
         <span class="caret"></span>
     </button>
 
-    <!-- <?= ListView::widget([
-        'dataProvider' => $dataProvider,
-        'options' => [
-            'tag' => 'ul',
-            'class' => 'dropdown-menu',
-            'aria-labelledby' => 'dropdownMenu1'
-        ],
-        'itemView' => $itemView,
-    ]); ?> -->
     <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-
-        <?php foreach ($content as $item): ?>
-            <li> <?= $item ?> </li>
-        <?php endforeach; ?>
-
+        <?= $itemView ?>
     </ul>
+
 </div>

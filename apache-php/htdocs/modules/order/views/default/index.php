@@ -15,10 +15,12 @@ use yii\widgets\ActiveForm;
 $this->title = Yii::t('app', 'Orders');
 $this->params['breadcrumbs'][] = $this->title;
 ?>
+
 <script>
+    // cleanup duplicates in query params without reloading page
     let url = window.location.href;
     let [path, params] = url.split("?");
-    let result = path + '?' + new URLSearchParams(Object.fromEntries(new URLSearchParams(params))).toString();
+    let result = path + '?<?= http_build_query(['OrderSearch' => $searchModel->getSearchState()]); ?>';
 
     window.history.replaceState(null, document.title, result);
 </script>
@@ -31,18 +33,32 @@ $this->params['breadcrumbs'][] = $this->title;
                 $status = $item['title'];
                 $status = mb_ucfirst($status, mb_detect_encoding($status));
         ?>
-            <li class="<?= (string)$item['value'] === $searchModel->currFilterByStatus ? 'active' : '' ?>">
+            <li class="<?= (string)$item['value'] === (string)$searchModel->currFilterByStatus ? 'active' : '' ?>">
                 <a href="">
-                    <?php $form = ActiveForm::begin(['method' => 'get']) ?>
-                        <?= Html::hiddenInput('OrderSearch[currFilterByStatus]', $item['value']) ?>
+                    <form action="/<?= Yii::$app->controller->action->uniqueId ?>" method="get">
+                        <?php
+                            $state = $searchModel->getSearchState();
+                            $state['currFilterByStatus'] = $item['value'];
+                            foreach ($state as $key => $value) :
+                        ?>
+                            <?= Html::hiddenInput('OrderSearch[' . $key . ']', $value) ?>
+                        <?php endforeach; ?>
                         <?= Html::submitButton($status, ['style' => 'border: none; background: none']) ?>
-                    <?php ActiveForm::end(); ?>
+                    </form>
                 </a>
             </li>
         <?php } ?>
 
         <li class="pull-right custom-search">
-            <?php $form = ActiveForm::begin(['options' => ['class' => 'form-inline'], 'method' => 'get']) ?>
+            <form action="/<?= Yii::$app->controller->action->uniqueId ?>" method="get" class="form-inline">
+                <?php
+                    $state = $searchModel->getSearchState();
+                    unset($state['searchText']);
+                    unset($state['searchCategory']);
+                    foreach ($state as $key => $value) :
+                ?>
+                    <?= Html::hiddenInput('OrderSearch[' . $key . ']', $value) ?>
+                <?php endforeach; ?>
 
                 <div class="input-group">
                     <?= Html::textInput('OrderSearch[searchText]', $searchModel->searchText, [
@@ -51,7 +67,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     ]) ?>
 
                     <span class="input-group-btn search-select-wrap">
-                        <?= Html::dropDownList('OrderSearch[searchCategory]', 0, $searchModel->searchCategoryVariants, [
+                        <?= Html::dropDownList('OrderSearch[searchCategory]', $searchModel->searchCategory, $searchModel->searchCategoryVariants, [
                             'class' => 'form-control search-select'
                         ]) ?>
 
@@ -60,7 +76,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         ])  ?>
                     </span>
                 </div>
-            <?php ActiveForm::end() ?>
+            </form>
         </li>
     </ul>
 
@@ -83,37 +99,19 @@ $this->params['breadcrumbs'][] = $this->title;
             'link',
             'quantity',
             [
-                'header' => $this->render('/widgets/GridView/_header-sort-column', [
+                'header' => $this->render('_header-sort-column', [
                     'dataProvider' => $dataProvider,
                     'title' => Yii::t('app', 'Service'),
-                    'itemView' => function() use ($searchModel, $dataProvider): array {
-                        $result = [
-                            // '<a href="">' . 
-                            //     ActiveForm::begin(['method' => 'get']) .
-                            //         Html::hiddenInput('OrderSearch[currFilterByService]', null) .
-                            //         Html::submitButton(
-                            //             Yii::t('app', 'All') . ' (' . $dataProvider->getTotalCount() . ')', 
-                            //             ['style' => 'border: none; background: none']
-                            //         ) .
-                            //     ActiveForm::end() .
-                            // '</a>'
-                        ];
-
-                        foreach ($searchModel->serviceWithOrdersCnt as $service) {
-                            $result[] = '
-                                <a href="">
-                                    <span class="label-id">' . 
-                                        Html::encode($service['orders_cnt']) . 
-                                    '</span> ' . 
-                                    Html::encode($service['name']) . 
-                                '</a>';
-                        }
-                        return $result;
-                    }
+                    'itemView' => $this->render('_dropdown-sort-by-service', [
+                        'searchModel' => $searchModel
+                    ]),
                 ]),
                 'headerOptions' => ['class' => 'dropdown-th'],
-                'content' => function (Order $model, $key, $index, $column){
-                    return $model->service->name;
+                'content' => function (Order $model, $key, $index, $column) use ($searchModel) {
+                    return '<span class="label-id">' .
+                        $searchModel->servicesMapById[$model->service_id]['orders_cnt'] .
+                        '</span>' .
+                        $model->service->name;
                 },
             ],
             [
@@ -124,18 +122,12 @@ $this->params['breadcrumbs'][] = $this->title;
                 }
             ],
             [
-                'header' => $this->render('/widgets/GridView/_header-sort-column', [
+                'header' => $this->render('_header-sort-column', [
                     'dataProvider' => $dataProvider,
                     'title' => Yii::t('app', 'Mode'),
-                    'content' => (function(): array {
-                        $result = ['<a href="">' . Yii::t('app', 'All') . '</a>'];
-
-                        foreach (OrderMode::values() as $value) {
-                            $textValue = OrderMode::matchFromInt($value)->getText();
-                            $result[] = '<a href="">' . mb_ucfirst($textValue, mb_detect_encoding($textValue)) . '</a>';
-                        }
-                        return $result;
-                    })(),
+                    'itemView' => $this->render('_dropdown-sort-by-mode', [
+                        'searchModel' => $searchModel
+                    ]),
                 ]),
                 'headerOptions' => ['class' => 'dropdown-th'],
                 'content' => function (Order $model, $key, $index, $column){
@@ -146,12 +138,20 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'header' => Yii::t('app', 'Created'),
                 'content' => function (Order $model, $key, $index, $column){
-                    $date = Yii::$app->formatter->asDate($model->created_at, 'Y-mm-dd');
-                    $time = Yii::$app->formatter->asDate($model->created_at, 'H:i:s');
+                    $date = Yii::$app->formatter->asDate($model->created_at, 'php:Y-m-d');
+                    $time = Yii::$app->formatter->asDate($model->created_at, 'php:H:i:s');
                     return "<span class=\"nowrap\">$date</span>\n<span class=\"nowrap\">$time</span>";
                 }
             ],
         ],
     ]); ?>
+
+    <?php $form = ActiveForm::begin(['method' => 'get', 'action' => '/order/default/as-csv']) ?>
+        <?php foreach ($searchModel->getSearchState() as $key => $value) : ?>
+            <?= Html::hiddenInput('OrderSearch[' . $key . ']', $value) ?>
+        <?php endforeach; ?>
+
+        <?= Html::submitButton(Yii::t('app', 'Download CSV'), ['class' => 'btn']) ?>
+    <?php ActiveForm::end() ?>
 
 </div>
