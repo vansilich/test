@@ -9,10 +9,12 @@ use app\modules\order\models\OrderSearch;
 use Yii;
 use yii\base\InvalidConfigException;
 
-class OrderSearchModelToListViewInterface implements ModelToFlatArrMapperInterface
+class OrderSearchModelToListView implements ModelToFlatArrMapperInterface
 {
 
     /**
+     * @inheritDoc
+     *
      * @throws InvalidConfigException
      */
     public function __invoke(OrderSearch|\yii\db\ActiveRecordInterface $model): array

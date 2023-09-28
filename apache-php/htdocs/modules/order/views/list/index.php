@@ -16,15 +16,6 @@ $this->title = Yii::t('app', 'Orders');
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 
-<script>
-    // cleanup duplicates in query params without reloading page
-    let url = window.location.href;
-    let [path, params] = url.split("?");
-    let result = path + '?<?= http_build_query(['OrderSearch' => $searchModel->getSearchState()]); ?>';
-
-    window.history.replaceState(null, document.title, result);
-</script>
-
 <div class="order-index">
 
     <ul class="nav nav-tabs p-b">
@@ -146,12 +137,14 @@ $this->params['breadcrumbs'][] = $this->title;
         ],
     ]); ?>
 
-    <?php $form = ActiveForm::begin(['method' => 'get', 'action' => '/order/default/as-csv']) ?>
-        <?php foreach ($searchModel->getSearchState() as $key => $value) : ?>
-            <?= Html::hiddenInput('OrderSearch[' . $key . ']', $value) ?>
-        <?php endforeach; ?>
+    <div class="col-sm-12" style="display: flex; align-items: end; flex-direction: column;">
+        <?php $form = ActiveForm::begin(['method' => 'get', 'action' => '/order/list/as-csv']) ?>
+            <?php foreach ($searchModel->getSearchState() as $key => $value) : ?>
+                <?= Html::hiddenInput('OrderSearch[' . $key . ']', $value) ?>
+            <?php endforeach; ?>
 
-        <?= Html::submitButton(Yii::t('app', 'Download CSV'), ['class' => 'btn']) ?>
-    <?php ActiveForm::end() ?>
+            <?= Html::submitButton(Yii::t('app', 'Download CSV'), ['class' => 'btn']) ?>
+        <?php ActiveForm::end() ?>
+    </div>
 
 </div>

@@ -28,6 +28,7 @@ use yii\widgets\ActiveForm;
     <li class="<?= (string)$searchModel->currFilterByMode === (string)$value ? 'active' : '' ?>">
         <a href="">
             <form action="/<?= Yii::$app->controller->action->uniqueId ?>" method="get">
+
                 <?php
                     $state = $searchModel->getSearchState();
                     $state['currFilterByMode'] = $value;

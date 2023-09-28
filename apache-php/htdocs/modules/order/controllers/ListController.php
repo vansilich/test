@@ -3,7 +3,7 @@
 namespace app\modules\order\controllers;
 
 use app\modules\order\actions\ExportToCsv;
-use app\modules\order\mappers\OrderSearchModelToListViewInterface;
+use app\modules\order\mappers\OrderSearchModelToListView;
 use app\modules\order\models\OrderSearch;
 use yii\base\Event;
 use yii\filters\VerbFilter;
@@ -14,7 +14,7 @@ use yii\web\Response;
 /**
  * Default controller for the `order` module
  */
-class DefaultController extends Controller
+class ListController extends Controller
 {
     /**
      * @inheritDoc
@@ -35,7 +35,7 @@ class DefaultController extends Controller
     }
 
     /**
-     * Lists all Order models.
+     * Lists all Order models
      *
      * @return string
      */
@@ -58,9 +58,9 @@ class DefaultController extends Controller
     public function actionAsCsv(): Response
     {
         $searchModel = new OrderSearch();
-        $dataProvider = $searchModel->search($this->request->queryParams, $this->getPrevParams());
+        $dataProvider = $searchModel->search($this->request->queryParams, []);
 
-        $csvPath = (new ExportToCsv())->export($dataProvider, new OrderSearchModelToListViewInterface());
+        $csvPath = (new ExportToCsv())->export($dataProvider, new OrderSearchModelToListView());
 
         Event::on(Response::class, Response::EVENT_AFTER_SEND, function ($event) use ($csvPath) {
             unlink($csvPath);
@@ -69,6 +69,11 @@ class DefaultController extends Controller
         return \Yii::$app->response->sendFile($csvPath, 'order.scv');
     }
 
+    /**
+     * Query params from `Referrer` HTTP header if request comes from same page
+     *
+     * @return array
+     */
     private function getPrevParams(): array
     {
         $prevParams = [];
@@ -77,7 +82,7 @@ class DefaultController extends Controller
             $prevCanonical = sprintf('http://%s%s', $prevParsed['host'], $prevParsed['path']);
 
             // So if we come from same page
-            if (isset($prevParsed['query']) && $prevCanonical === Url::canonical()) {
+            if ($prevCanonical === Url::canonical() && isset($prevParsed['query'])) {
                 parse_str($prevParsed['query'], $prevParams);
             }
         }

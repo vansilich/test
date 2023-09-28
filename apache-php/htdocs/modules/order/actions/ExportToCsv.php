@@ -5,7 +5,6 @@ namespace app\modules\order\actions;
 use InvalidArgumentException;
 use Yii;
 use yii\data\ActiveDataProvider;
-use yii\db\ActiveRecord;
 
 class ExportToCsv
 {
@@ -20,7 +19,7 @@ class ExportToCsv
      *
      * @param ActiveDataProvider $dataProvider - datasource
      * @param ModelToFlatArrMapperInterface $modelMapper - function that maps
-     * @return string - absolute filepath to .csv file
+     * @return string - absolute local filepath to .csv file
      */
     public function export(ActiveDataProvider $dataProvider, ModelToFlatArrMapperInterface $modelMapper): string
     {
@@ -31,7 +30,9 @@ class ExportToCsv
         $filepath = tempnam(Yii::getAlias('@runtime'), sprintf('_csv_export_%d_', time()));
         $file = fopen($filepath, 'w');
 
+        $dataProvider->pagination->page = 0;
         $dataProvider->pagination->pageSize = self::ITERATION_BATCH_SIZE;
+        $dataProvider->refresh();
 
         while(true){
             $res = $dataProvider->getModels();

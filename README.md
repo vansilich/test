@@ -12,8 +12,4 @@
 * * `php yii migrate --interactive=0` - запускаем миграции
 * * `php yii seed/raw-all` - сидируем таблицы
 
-Проект будет доступен по адресу https://app.indocker.app/order/default/index
-
-## TODO:
-* Вынести все переводы в отдельную категорию модуля
-* Вынести все поля `OrderSearch` как отдельные hidden инпуты в фильтрах
+Проект будет доступен по адресу https://app.indocker.app/order/list/index

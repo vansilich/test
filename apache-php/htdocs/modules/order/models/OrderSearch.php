@@ -26,7 +26,7 @@ class OrderSearch extends Order
 
     public array $servicesByOrdersCount = [];
     public array $servicesMapById = [];
-    public int $servicesCount = 0;
+    public int $ordersOfServicesCount = 0;
 
     public function __construct($config = [])
     {
@@ -125,7 +125,6 @@ class OrderSearch extends Order
         $this->applyFilterByMode($query);
 
         $serviceGroupQuery->select(['services.id', 'services.name', 'COUNT(services.id) orders_cnt'])
-            ->joinWith('service')
             ->groupBy(['services.id'])
             ->orderBy(['orders_cnt' => SORT_DESC]);
 
@@ -134,7 +133,7 @@ class OrderSearch extends Order
         foreach ($serviceGroupQuery->asArray()->all() as $item) {
             $this->servicesByOrdersCount[] = $item;
             $this->servicesMapById[ $item['id'] ] = $item;
-            $this->servicesCount += $item['orders_cnt'];
+            $this->ordersOfServicesCount += $item['orders_cnt'];
         }
 
         return $dataProvider;
