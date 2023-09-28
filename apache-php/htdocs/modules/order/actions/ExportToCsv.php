@@ -8,11 +8,10 @@ use yii\data\ActiveDataProvider;
 
 class ExportToCsv
 {
+    public const CSV_SEPARATOR = ',';
+    public const CSV_ENCLOSURE = '"';
 
-    const CSV_SEPARATOR = ',';
-    const CSV_ENCLOSURE = '"';
-
-    const ITERATION_BATCH_SIZE = 10000;
+    public const ITERATION_BATCH_SIZE = 10000;
 
     /**
      * Saves all records from data provider to local .csv file
@@ -34,7 +33,7 @@ class ExportToCsv
         $dataProvider->pagination->pageSize = self::ITERATION_BATCH_SIZE;
         $dataProvider->refresh();
 
-        while(true){
+        while(true) {
             $res = $dataProvider->getModels();
             if (empty($res)) {
                 break;

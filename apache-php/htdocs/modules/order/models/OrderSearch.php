@@ -12,7 +12,6 @@ use yii\db\ActiveQuery;
  */
 class OrderSearch extends Order
 {
-
     public ?string $currFilterByStatus = null;
     public array $filterByStatusVariants;
 
@@ -142,7 +141,7 @@ class OrderSearch extends Order
     private function applyFilterBySearch(ActiveQuery $query, array $previousParams): void
     {
         if ($this->searchText === '' || $this->searchText === null) {
-            if (isset($previousParams['searchText']) && $previousParams['searchText'] !== ''){
+            if (isset($previousParams['searchText']) && $previousParams['searchText'] !== '') {
                 $this->currFilterByMode = null;
                 $this->currFilterByService = null;
             }
@@ -158,7 +157,7 @@ class OrderSearch extends Order
             $this->currFilterByService = null;
         }
 
-        switch ($this->searchCategory){
+        switch ($this->searchCategory) {
             case 0:
                 $this->id = $this->searchText;
                 $query->andFilterWhere(['order.id' => $this->id]);

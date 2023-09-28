@@ -11,7 +11,6 @@ use yii\base\InvalidConfigException;
 
 class OrderSearchModelToListView implements ModelToFlatArrMapperInterface
 {
-
     /**
      * @inheritDoc
      *

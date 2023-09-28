@@ -6,7 +6,6 @@ use yii\db\ActiveRecordInterface;
 
 interface ModelToFlatArrMapperInterface
 {
-
     /**
      * Maps ActiveRecord model (with relations) to flat array (elements are not sub arrays)
      *

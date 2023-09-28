@@ -7,7 +7,6 @@ use yii\web\View;
 
 class IE9Asset extends AssetBundle
 {
-
     public $jsOptions = ['condition' => 'lte IE9', 'position' => View::POS_HEAD];
     public $basePath = '@webroot';
     public $baseUrl = '@web';

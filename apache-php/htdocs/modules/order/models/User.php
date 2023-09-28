@@ -12,7 +12,6 @@ use yii\db\ActiveRecord;
  */
 class User extends ActiveRecord
 {
-
     /**
      * {@inheritdoc}
      */

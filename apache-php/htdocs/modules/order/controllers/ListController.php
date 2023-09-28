@@ -77,7 +77,7 @@ class ListController extends Controller
     private function getPrevParams(): array
     {
         $prevParams = [];
-        if(\Yii::$app->request->referrer !== null){
+        if(\Yii::$app->request->referrer !== null) {
             $prevParsed = parse_url(\Yii::$app->request->referrer);
             $prevCanonical = sprintf('http://%s%s', $prevParsed['host'], $prevParsed['path']);
 
