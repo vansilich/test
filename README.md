@@ -13,3 +13,13 @@
 * * `php yii seed/raw-all` - сидируем таблицы
 
 Проект будет доступен по адресу https://app.indocker.app/order/list/index
+
+## Остановка
+* Переходим в терминал и вводим комманду:
+* * `docker compose -f docker-compose.yml -f dev.docker-compose.yml stop`
+
+## Удаление
+* Переходим в терминал и вводим комманды:
+* * `docker compose -f docker-compose.yml -f dev.docker-compose.yml down`
+* * `docker network rm indocker-app-network`
+* * `docker volume rm test_app_db-data`
