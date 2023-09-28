@@ -3,7 +3,9 @@
 namespace app\modules\order\models;
 
 use app\modules\order\enums\OrderStatus;
+use Yii;
 use yii\base\Model;
+use yii\caching\CacheInterface;
 use yii\data\ActiveDataProvider;
 use yii\db\ActiveQuery;
 
@@ -12,6 +14,8 @@ use yii\db\ActiveQuery;
  */
 class OrderSearch extends Order
 {
+    private CacheInterface $cache;
+
     public ?string $currFilterByStatus = null;
     public array $filterByStatusVariants;
 
@@ -27,17 +31,19 @@ class OrderSearch extends Order
     public array $servicesMapById = [];
     public int $ordersOfServicesCount = 0;
 
-    public function __construct($config = [])
+    public function __construct(CacheInterface $cache, $config = [])
     {
+        $this->cache = $cache;
+
         $this->searchCategoryVariants = [
-            0 => \Yii::t('app', 'Order ID'),
-            1 => \Yii::t('app', 'Link'),
-            2 => \Yii::t('app', 'Username'),
+            0 => Yii::t('app', 'Order ID'),
+            1 => Yii::t('app', 'Link'),
+            2 => Yii::t('app', 'Username'),
         ];
         $this->searchCategory = 0;
 
         $this->filterByStatusVariants = [
-            ['title' => \Yii::t('app', 'All orders'), 'value' => null],
+            ['title' => Yii::t('app', 'All orders'), 'value' => null],
             ['title' => OrderStatus::PENDING->getText(), 'value' => OrderStatus::PENDING->value],
             ['title' => OrderStatus::IN_PROGRESS->getText(), 'value' => OrderStatus::IN_PROGRESS->value],
             ['title' => OrderStatus::COMPLETED->getText(), 'value' => OrderStatus::COMPLETED->value],
@@ -129,7 +135,15 @@ class OrderSearch extends Order
 
         $this->applyFilterByMode($serviceGroupQuery);
 
-        foreach ($serviceGroupQuery->asArray()->all() as $item) {
+        $serviceGroupQuerySql = $serviceGroupQuery->createCommand()->rawSql;
+        $serviceGroup = $this->cache->get($serviceGroupQuerySql);
+
+        if ($serviceGroup === false) {
+            $serviceGroup = $serviceGroupQuery->asArray()->all();
+            $this->cache->set($serviceGroupQuerySql, $serviceGroup, 1000);
+        }
+
+        foreach ($serviceGroup as $item) {
             $this->servicesByOrdersCount[] = $item;
             $this->servicesMapById[ $item['id'] ] = $item;
             $this->ordersOfServicesCount += $item['orders_cnt'];

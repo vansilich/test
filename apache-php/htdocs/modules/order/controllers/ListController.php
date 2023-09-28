@@ -6,6 +6,7 @@ use app\modules\order\actions\ExportToCsv;
 use app\modules\order\mappers\OrderSearchModelToListView;
 use app\modules\order\models\OrderSearch;
 use yii\base\Event;
+use yii\caching\CacheInterface;
 use yii\filters\VerbFilter;
 use yii\helpers\Url;
 use yii\web\Controller;
@@ -37,11 +38,12 @@ class ListController extends Controller
     /**
      * Lists all Order models
      *
+     * @param CacheInterface $cache
      * @return string
      */
-    public function actionIndex(): string
+    public function actionIndex(CacheInterface $cache): string
     {
-        $searchModel = new OrderSearch();
+        $searchModel = new OrderSearch($cache);
         $dataProvider = $searchModel->search($this->request->queryParams, $this->getPrevParams());
 
         return $this->render('index', [
@@ -53,11 +55,12 @@ class ListController extends Controller
     /**
      * Download CSV file with contents of @see self::actionIndex method
      *
+     * @param CacheInterface $cache
      * @return Response
      */
-    public function actionAsCsv(): Response
+    public function actionAsCsv(CacheInterface $cache): Response
     {
-        $searchModel = new OrderSearch();
+        $searchModel = new OrderSearch($cache);
         $dataProvider = $searchModel->search($this->request->queryParams, []);
 
         $csvPath = (new ExportToCsv())->export($dataProvider, new OrderSearchModelToListView());
