@@ -1,10 +1,13 @@
 <?php
 
-namespace app\modules\order\models;
+namespace order\models;
 
-use app\modules\order\enums\OrderStatus;
-use Yii;
-use yii\base\Model;
+use app\modules\order\models\ActiveRecord\Order;
+use order\models\filters\OrderSearch\FilterInterface;
+use order\models\filters\OrderSearch\ModeFilter;
+use order\models\filters\OrderSearch\SearchFilter;
+use order\models\filters\OrderSearch\ServiceFilter;
+use order\models\filters\OrderSearch\StatusFilter;
 use yii\caching\CacheInterface;
 use yii\data\ActiveDataProvider;
 use yii\db\ActiveQuery;
@@ -16,87 +19,90 @@ class OrderSearch extends Order
 {
     private CacheInterface $cache;
 
-    public ?string $currFilterByStatus = null;
-    public array $filterByStatusVariants;
+    /**
+     * All filters ids
+     */
+    const BY_STATUS = 0;
+    const BY_SEARCH = 1;
+    const BY_MODE = 2;
+    const BY_SERVICE = 3;
 
-    public ?string $searchText = null;
-    public int $searchCategory;
-    public array $searchCategoryVariants;
+    /**
+     * @var array<int, FilterInterface> - all filters that will be applied
+     */
+    public array $filters;
 
-    public ?string $currFilterByService = null;
+    /**
+     * @var OrderSearchFiltersState - state of all filters
+     */
+    public OrderSearchFiltersState $filtersState;
 
-    public ?string $currFilterByMode = null;
-
+    /**
+     * @var array[] - ordered by orders count services
+     */
     public array $servicesByOrdersCount = [];
+    /**
+     * @var array<int, array> - same as $this->servicesByOrdersCount, but keys are ids of services
+     */
     public array $servicesMapById = [];
+    /**
+     * @var int - count of all orders in all services
+     */
     public int $ordersOfServicesCount = 0;
+
+    /**
+     * @var array - data of current request of OrderSearchFiltersState::class values
+     */
+    public array $params;
+
+    /**
+     * @var array - same as self::params, but data from past request
+     */
+    public array $prevParams = [];
 
     public function __construct(CacheInterface $cache, $config = [])
     {
         $this->cache = $cache;
 
-        $this->searchCategoryVariants = [
-            0 => Yii::t('app', 'Order ID'),
-            1 => Yii::t('app', 'Link'),
-            2 => Yii::t('app', 'Username'),
-        ];
-        $this->searchCategory = 0;
-
-        $this->filterByStatusVariants = [
-            ['title' => Yii::t('app', 'All orders'), 'value' => null],
-            ['title' => OrderStatus::PENDING->getText(), 'value' => OrderStatus::PENDING->value],
-            ['title' => OrderStatus::IN_PROGRESS->getText(), 'value' => OrderStatus::IN_PROGRESS->value],
-            ['title' => OrderStatus::COMPLETED->getText(), 'value' => OrderStatus::COMPLETED->value],
-            ['title' => OrderStatus::CANCELED->getText(), 'value' => OrderStatus::CANCELED->value],
-            ['title' => OrderStatus::FAIL->getText(), 'value' => OrderStatus::FAIL->value],
+        $this->filters = [
+            static::BY_STATUS   => new StatusFilter(),
+            static::BY_SEARCH   => new SearchFilter(),
+            static::BY_MODE     => new ModeFilter(),
+            static::BY_SERVICE  => new ServiceFilter(),
         ];
 
         parent::__construct($config);
     }
 
-    public function getSearchState(): array
+    public function setParams(array $params): OrderSearch
     {
-        return [
-            'currFilterByStatus' => $this->currFilterByStatus,
-            'searchText' => $this->searchText,
-            'searchCategory' => $this->searchCategory,
-            'currFilterByService' => $this->currFilterByService,
-            'currFilterByMode' => $this->currFilterByMode,
-        ];
+        $this->params = $params;
+        return $this;
+    }
+
+    public function setPrevParams(array $prevParams): OrderSearch
+    {
+        $this->prevParams = $prevParams;
+        return $this;
     }
 
     /**
-     * {@inheritdoc}
+     * Getter for filters current state
+     *
+     * @return OrderSearchFiltersState
      */
-    public function rules()
+    public function getFiltersState(): OrderSearchFiltersState
     {
-        return [
-            [['searchText', 'currFilterByStatus', 'currFilterByService', 'currFilterByMode'], 'string'],
-            [['searchCategory'], 'integer'],
-
-            [['id', 'user_id', 'quantity', 'service_id', 'status', 'created_at', 'mode'], 'integer'],
-            [['link'], 'safe'],
-        ];
+        return $this->filtersState;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function scenarios()
-    {
-        // bypass scenarios() implementation in the parent class
-        return Model::scenarios();
-    }
 
     /**
      * Creates data provider instance with search query applied
      *
-     * @param array $params
-     * @param array $previousParams
-     *
      * @return ActiveDataProvider
      */
-    public function search(array $params, array $previousParams): ActiveDataProvider
+    public function search(): ActiveDataProvider
     {
         $query = Order::find();
 
@@ -112,10 +118,16 @@ class OrderSearch extends Order
             ]
         ]);
 
-        $this->load($params);
+        $this->filtersState = new OrderSearchFiltersState();
+        foreach ($this->filters as $filter) {
+            $filter->setParams($this->params);
+            $filter->setPrevParams($this->prevParams);
 
-        if (!$this->validate()) {
-            return $dataProvider;
+            $filter->modifyState($this->filtersState);
+        }
+
+        foreach ($this->filters as $filter) {
+            $filter->rejectSomeFilters($this->filtersState);
         }
 
         // grid filtering conditions
@@ -124,16 +136,30 @@ class OrderSearch extends Order
             ->joinWith('service');
         $serviceGroupQuery = clone $query;
 
-        $this->applyFilterByStatus($query, $previousParams['OrderSearch'] ?? []);
-        $this->applyFilterBySearch($query, $previousParams['OrderSearch'] ?? []);
-        $this->applyFilterByService($query);
-        $this->applyFilterByMode($query);
+        foreach ($this->filters as $filter) {
+            $filter->apply($query, $this->filtersState);
+        }
 
+        $this->setServicesInfo($serviceGroupQuery);
+
+        return $dataProvider;
+    }
+
+    /**
+     * Set info about services state
+     *
+     * @param ActiveQuery $serviceGroupQuery
+     * @return void
+     */
+    private function setServicesInfo(ActiveQuery $serviceGroupQuery): void
+    {
         $serviceGroupQuery->select(['services.id', 'services.name', 'COUNT(services.id) orders_cnt'])
             ->groupBy(['services.id'])
             ->orderBy(['orders_cnt' => SORT_DESC]);
 
-        $this->applyFilterByMode($serviceGroupQuery);
+        foreach ($this->filters as $filter) {
+            $filter->applyToServiceState($serviceGroupQuery, $this->filtersState);
+        }
 
         $serviceGroupQuerySql = $serviceGroupQuery->createCommand()->rawSql;
         $serviceGroup = $this->cache->get($serviceGroupQuerySql);
@@ -148,88 +174,6 @@ class OrderSearch extends Order
             $this->servicesMapById[ $item['id'] ] = $item;
             $this->ordersOfServicesCount += $item['orders_cnt'];
         }
-
-        return $dataProvider;
-    }
-
-    private function applyFilterBySearch(ActiveQuery $query, array $previousParams): void
-    {
-        if ($this->searchText === '' || $this->searchText === null) {
-            if (isset($previousParams['searchText']) && $previousParams['searchText'] !== '') {
-                $this->currFilterByMode = null;
-                $this->currFilterByService = null;
-            }
-
-            $this->searchText = null;
-            $this->searchCategory = 0;
-
-            return;
-        }
-
-        if (isset($previousParams['searchText']) && $previousParams['searchText'] !== $this->searchText) {
-            $this->currFilterByMode = null;
-            $this->currFilterByService = null;
-        }
-
-        switch ($this->searchCategory) {
-            case 0:
-                $this->id = $this->searchText;
-                $query->andFilterWhere(['order.id' => $this->id]);
-                break;
-            case 1:
-                $this->link = $this->searchText;
-                $query->andFilterWhere(['like', 'order.link', $this->link]);
-                break;
-            case 2:
-                $query->andWhere('CONCAT(`users`.`first_name`, \' \', `users`.`last_name`) LIKE :searchText')
-                    ->addParams([':searchText' => '%' . $this->searchText . '%']);
-                break;
-            default:
-                throw new \InvalidArgumentException("Unknown search category for filtering: '" . $this->searchCategory . "'");
-        }
-    }
-
-    private function applyFilterByStatus(ActiveQuery $query, array $previousParams): void
-    {
-        if ($this->currFilterByStatus === '' || $this->currFilterByStatus === null) {
-            if (isset($previousParams['currFilterByStatus']) && $previousParams['currFilterByStatus'] !== '') {
-                $this->currFilterByMode = null;
-                $this->currFilterByService = null;
-            }
-
-            $this->currFilterByStatus = null;
-            return;
-        }
-
-        if (isset($previousParams['currFilterByStatus']) && $previousParams['currFilterByStatus'] !== $this->currFilterByStatus) {
-            $this->currFilterByMode = null;
-            $this->currFilterByService = null;
-        }
-
-        $this->status = $this->currFilterByStatus;
-        $query->andFilterWhere(['order.status' => $this->status]);
-    }
-
-    private function applyFilterByService(ActiveQuery $query): void
-    {
-        if ($this->currFilterByService === '' || $this->currFilterByService === null) {
-            $this->currFilterByService = null;
-            return;
-        }
-
-        $this->service_id = $this->currFilterByService;
-        $query->andFilterWhere(['order.service_id' => $this->service_id]);
-    }
-
-    private function applyFilterByMode(ActiveQuery $query): void
-    {
-        if ($this->currFilterByMode === '' || $this->currFilterByMode === null) {
-            $this->currFilterByMode = null;
-            return;
-        }
-
-        $this->mode = $this->currFilterByMode;
-        $query->andFilterWhere(['order.mode' => $this->mode]);
     }
 
 }

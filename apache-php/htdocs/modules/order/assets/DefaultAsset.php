@@ -1,9 +1,12 @@
 <?php
 
-namespace app\modules\order\assets;
+namespace order\assets;
 
 use yii\web\AssetBundle;
 
+/**
+ * Standard assets for component
+ */
 class DefaultAsset extends AssetBundle
 {
     public $basePath = '@webroot';

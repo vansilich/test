@@ -673,12 +673,9 @@ body {
   -moz-border-radius: 3px;
   border-radius: 3px;
   margin-right: 5px;
-  padding: 0;
+  padding: 7px 15px;
   border: none;
   height: 34px;
-}
-.nav-tabs>li>a button[type="submit"]{
-  padding: 7px 15px;
 }
 .nav-tabs>li>a:hover{
   border-bottom: 1px solid #eeeeee;
@@ -2460,14 +2457,6 @@ input[type="checkbox"].selectOrder{
 
 .bootstrap-select .dropdown-menu>li>a{
   white-space: inherit;
-}
-.dropdown-menu>li>a{
-  padding: 0;
-}
-.dropdown-menu>li>a button[type="submit"]{
-  padding: 3px 20px;
-  width: 100%;
-  text-align: left;
 }
 .admin-api-title{
   width: 240px;

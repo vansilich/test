@@ -54,6 +54,7 @@
     },
     "autoload": {
         "files": [
+            "utils/helpers/http/functions.php",
             "utils/helpers/lang/functions.php"
         ]
     },

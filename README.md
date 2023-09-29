@@ -23,3 +23,7 @@
 * * `docker compose -f docker-compose.yml -f dev.docker-compose.yml down`
 * * `docker network rm indocker-app-network`
 * * `docker volume rm test_app_db-data`
+
+## TODO
+* `/index` из маршрута почему то не убирается
+* Доделать чтобы статус был как конец ссылки

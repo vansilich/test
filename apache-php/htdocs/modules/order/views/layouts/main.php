@@ -3,9 +3,8 @@
 /** @var yii\web\View $this */
 /** @var string $content */
 
-use app\modules\order\assets\DefaultAsset;
-use app\modules\order\assets\IE9Asset;
-use app\widgets\Alert;
+use order\assets\DefaultAsset;
+use order\assets\IE9Asset;
 use yii\bootstrap5\Html;
 use yii\helpers\Url;
 
@@ -67,8 +66,6 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         </nav>
 
         <div class="container-fluid">
-            <?= Alert::widget() ?>
-
             <?= $content ?>
         </div>
 

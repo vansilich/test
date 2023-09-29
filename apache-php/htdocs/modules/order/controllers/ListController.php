@@ -1,15 +1,20 @@
 <?php
 
-namespace app\modules\order\controllers;
+namespace order\controllers;
 
-use app\modules\order\actions\ExportToCsv;
-use app\modules\order\mappers\OrderSearchModelToListView;
-use app\modules\order\models\OrderSearch;
+use order\controllers\services\ExportToCsv;
+use order\models\enums\OrderStatus;
+use order\models\mappers\OrderSearchModelToListView;
+use order\models\OrderSearch;
+use order\models\OrderSearchFiltersState;
+use Yii;
 use yii\base\Event;
+use yii\base\InvalidConfigException;
 use yii\caching\CacheInterface;
 use yii\filters\VerbFilter;
 use yii\helpers\Url;
 use yii\web\Controller;
+use yii\web\Request;
 use yii\web\Response;
 
 /**
@@ -17,6 +22,8 @@ use yii\web\Response;
  */
 class ListController extends Controller
 {
+    public $defaultAction = 'index';
+
     /**
      * @inheritDoc
      */
@@ -40,11 +47,37 @@ class ListController extends Controller
      *
      * @param CacheInterface $cache
      * @return string
+     * @throws InvalidConfigException
      */
-    public function actionIndex(CacheInterface $cache): string
+    public function actionIndex(CacheInterface $cache, ?string $status = null): string
     {
         $searchModel = new OrderSearch($cache);
-        $dataProvider = $searchModel->search($this->request->queryParams, $this->getPrevParams());
+
+        $formName = (new OrderSearchFiltersState)->formName(); // filter state object
+
+        $params = $this->request->get($formName) ?? [];
+        if ($status !== null && $status !== '') {
+            foreach (OrderStatus::cases() as $case) {
+
+                if ($case->getUrlSafeText() === $status) {
+                    $params['byStatus'] = $case->value;
+                }
+            }
+        }
+        $searchModel->setParams($params);
+
+        $prevParams = [];
+        // parse query params if request comes from the same page
+        $referrer = Yii::$app->request->referrer;
+        if ($referrer !== null) {
+            $prevParsed = parse_url($referrer);
+            if (isRequestFromSameCanonical(Yii::$app->request->absoluteUrl, $referrer) && isset($prevParsed['query'])) {
+                parse_str($prevParsed['query'], $prevParams);
+            }
+        }
+        $searchModel->setPrevParams($prevParams[$formName] ?? []);
+
+        $dataProvider = $searchModel->search();
 
         return $this->render('index', [
             'searchModel' => $searchModel,
@@ -53,43 +86,29 @@ class ListController extends Controller
     }
 
     /**
-     * Download CSV file with contents of @see self::actionIndex method
+     * Download CSV file with contents of index action
+     * @see self::actionIndex
      *
      * @param CacheInterface $cache
      * @return Response
+     * @throws InvalidConfigException
      */
     public function actionAsCsv(CacheInterface $cache): Response
     {
         $searchModel = new OrderSearch($cache);
-        $dataProvider = $searchModel->search($this->request->queryParams, []);
+
+        $formName = (new OrderSearchFiltersState)->formName(); // filter state object
+
+        $searchModel->setParams($this->request->post($formName) ?? []);
+        $dataProvider = $searchModel->search();
 
         $csvPath = (new ExportToCsv())->export($dataProvider, new OrderSearchModelToListView());
 
-        Event::on(Response::class, Response::EVENT_AFTER_SEND, function ($event) use ($csvPath) {
+        Event::on(Response::class, Response::EVENT_AFTER_SEND, function () use ($csvPath) {
             unlink($csvPath);
         });
 
-        return \Yii::$app->response->sendFile($csvPath, 'order.scv');
+        return Yii::$app->response->sendFile($csvPath, 'order.scv');
     }
 
-    /**
-     * Query params from `Referrer` HTTP header if request comes from same page
-     *
-     * @return array
-     */
-    private function getPrevParams(): array
-    {
-        $prevParams = [];
-        if(\Yii::$app->request->referrer !== null) {
-            $prevParsed = parse_url(\Yii::$app->request->referrer);
-            $prevCanonical = sprintf('http://%s%s', $prevParsed['host'], $prevParsed['path']);
-
-            // So if we come from same page
-            if ($prevCanonical === Url::canonical() && isset($prevParsed['query'])) {
-                parse_str($prevParsed['query'], $prevParams);
-            }
-        }
-
-        return $prevParams;
-    }
 }

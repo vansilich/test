@@ -1,8 +1,6 @@
 <?php
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-use yii\widgets\ListView;
-
 /** @var string $title */
 /** @var string $itemView */
 ?>

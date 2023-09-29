@@ -1,10 +1,13 @@
 <?php
 
-namespace app\modules\order\assets;
+namespace order\assets;
 
 use yii\web\AssetBundle;
 use yii\web\View;
 
+/**
+ * Support assets fot Internet Explorer 9
+ */
 class IE9Asset extends AssetBundle
 {
     public $jsOptions = ['condition' => 'lte IE9', 'position' => View::POS_HEAD];

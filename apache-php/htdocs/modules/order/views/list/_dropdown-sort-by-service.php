@@ -1,54 +1,35 @@
 <?php
 
-use app\modules\order\models\OrderSearch;
+use order\models\OrderSearch;
 use yii\helpers\Html;
+use yii\helpers\Url;
 
-/** @var OrderSearch $searchModel */
+/**
+ * @var OrderSearch $searchModel
+ * @var string $formName
+ * @var array $filterStateAttrs
+ */
 ?>
 
-<li class="<?= $searchModel->currFilterByService === null ? 'active' : '' ?>">
-    <a href="">
-        <form action="/<?= Yii::$app->controller->action->uniqueId ?>" method="get">
-
-            <?php
-                $state = $searchModel->getSearchState();
-                $state['currFilterByService'] = null;
-                foreach ($state as $key => $value) :
-            ?>
-                <?= Html::hiddenInput('OrderSearch[' . $key . ']', $value) ?>
-            <?php endforeach; ?>
-
-            <?= Html::submitButton(
-            Yii::t('app', 'All') . ' (' . $searchModel->ordersOfServicesCount . ')',
-                    ['style' => 'border: none; background: none']
-                )
-            ?>
-        </form>
-    </a>
+<li class="<?= $filterStateAttrs['byService'] === null ? 'active' : '' ?>">
+    <?=
+        Html::a(
+            sprintf('%s (%d)', Yii::t('app', 'All'), $searchModel->ordersOfServicesCount),
+            Url::current(['page' => 1, $formName => [...$filterStateAttrs, 'byService' => null ]])
+        )
+    ?>
 </li>
 
 <?php foreach ($searchModel->servicesByOrdersCount as $service) : ?>
 
-    <li class="<?= $searchModel->currFilterByService === (string)$service['id'] ? 'active' : '' ?>">
-        <a href="">
-            <form action="/<?= Yii::$app->controller->action->uniqueId ?>" method="get">
+    <li class="<?= (string)$filterStateAttrs['byService'] === (string)$service['id'] ? 'active' : '' ?>">
 
-                <?php
-                    $state = $searchModel->getSearchState();
-                    $state['currFilterByService'] = $service['id'];
-                    foreach ($state as $key => $value) :
-                ?>
-                    <?= Html::hiddenInput('OrderSearch[' . $key . ']', $value) ?>
-                <?php endforeach; ?>
-
-                <?= Html::submitButton(
-            '<span class="label-id">' .
-                        Html::encode($service['orders_cnt']) .
-                    '</span>' .
-                    Html::encode($service['name']),
-                    ['style' => 'border: none; background: none']
-                ) ?>
-            </form>
+        <a href="<?= Url::current(['page' => 1, $formName => [...$filterStateAttrs, 'byService' => $service['id'] ]]) ?>">
+            <span class="label-id">
+                <?= Html::encode($service['orders_cnt']) ?>
+            </span>
+            <?= Html::encode($service['name']) ?>
         </a>
+
     </li>
 <?php endforeach; ?>
