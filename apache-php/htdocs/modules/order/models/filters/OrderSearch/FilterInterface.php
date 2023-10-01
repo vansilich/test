@@ -20,29 +20,12 @@ interface FilterInterface
     public function setParams(array $params): FilterInterface;
 
     /**
-     * Set previous filter query params to this filter state
-     *
-     * @param array<string, mixed> $prevParams
-     * @return FilterInterface
-     */
-    public function setPrevParams(array $prevParams): FilterInterface;
-
-    /**
      * Set params from current filter to global filters $state
      *
      * @param OrderSearchFiltersState $state
      * @return void
      */
     public function modifyState(OrderSearchFiltersState $state): void;
-
-    /**
-     * Flush some other filter`s state.
-     * This is handy if we, for example, want to flush all filters if current filter changed
-     *
-     * @param OrderSearchFiltersState $state
-     * @return void
-     */
-    public function rejectSomeFilters(OrderSearchFiltersState $state): void;
 
     /**
      * Apply params from current filter to main SQL search statement

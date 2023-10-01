@@ -15,7 +15,6 @@ class ModeFilter implements FilterInterface
     private bool $wasModified = false;
 
     private array $params;
-    private array $prevParams = [];
 
     /**
      * @inheritDoc
@@ -23,15 +22,6 @@ class ModeFilter implements FilterInterface
     public function setParams(array $params): ModeFilter
     {
         $this->params = $params;
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function setPrevParams(array $prevParams): ModeFilter
-    {
-        $this->prevParams = $prevParams;
         return $this;
     }
 
@@ -46,12 +36,6 @@ class ModeFilter implements FilterInterface
 
         $state->setByMode($this->params['byMode']);
     }
-
-    /**
-     * @inheritDoc
-     */
-    public function rejectSomeFilters(OrderSearchFiltersState $state): void
-    {}
 
     /**
      * @inheritDoc

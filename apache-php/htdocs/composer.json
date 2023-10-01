@@ -31,7 +31,7 @@
         "codeception/module-filesystem": "^3.0 || ^2.0 || ^1.1",
         "codeception/verify": "^3.0 || ^2.2",
         "symfony/browser-kit": "^6.0 || >=2.7 <=4.2.4",
-        "friendsofphp/php-cs-fixer": "^3.30",
+        "friendsofphp/php-cs-fixer": "^3.34",
         "phpstan/phpstan": "^1.10"
     },
     "config": {
@@ -54,7 +54,6 @@
     },
     "autoload": {
         "files": [
-            "utils/helpers/http/functions.php",
             "utils/helpers/lang/functions.php"
         ]
     },

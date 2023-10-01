@@ -12,7 +12,7 @@
 * * `php yii migrate --interactive=0` - запускаем миграции
 * * `php yii seed/raw-all` - сидируем таблицы
 
-Проект будет доступен по адресу https://app.indocker.app/order/list/index
+Проект будет доступен по адресу https://app.indocker.app/order/list
 
 ## Остановка
 * Переходим в терминал и вводим комманду:
@@ -23,7 +23,3 @@
 * * `docker compose -f docker-compose.yml -f dev.docker-compose.yml down`
 * * `docker network rm indocker-app-network`
 * * `docker volume rm test_app_db-data`
-
-## TODO
-* `/index` из маршрута почему то не убирается
-* Доделать чтобы статус был как конец ссылки

@@ -15,7 +15,6 @@ class StatusFilter implements FilterInterface
     private array $variants;
 
     private array $params;
-    private array $prevParams = [];
 
     public function __construct()
     {
@@ -51,15 +50,6 @@ class StatusFilter implements FilterInterface
     /**
      * @inheritDoc
      */
-    public function setPrevParams(array $prevParams): StatusFilter
-    {
-        $this->prevParams = $prevParams;
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function modifyState(OrderSearchFiltersState $state): void
     {
         if (!isset($this->params['byStatus']) || $this->params['byStatus'] === '') {
@@ -67,32 +57,6 @@ class StatusFilter implements FilterInterface
         }
 
         $state->setByStatus($this->params['byStatus']);
-    }
-
-    /**
-     * Reject Service and Mode filters if current filter changed
-     *
-     * @inheritDoc
-     */
-    public function rejectSomeFilters(OrderSearchFiltersState $state): void
-    {
-        if (empty($this->prevParams)){
-            return;
-        }
-
-        if ($state->byStatus === null || $state->byStatus === '') {
-
-            if (isset($this->prevParams['byStatus']) && $this->prevParams['byStatus'] !== '') {
-                $state->setByService(null);
-                $state->setByMode(null);
-            }
-            return;
-        }
-
-        if (!isset($this->prevParams['byStatus']) || $this->prevParams['byStatus'] !== $state->byStatus) {
-            $state->setByService(null);
-            $state->setByMode(null);
-        }
     }
 
     /**

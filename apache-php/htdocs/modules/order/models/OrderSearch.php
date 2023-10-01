@@ -55,11 +55,6 @@ class OrderSearch extends Order
      */
     public array $params;
 
-    /**
-     * @var array - same as self::params, but data from past request
-     */
-    public array $prevParams = [];
-
     public function __construct(CacheInterface $cache, $config = [])
     {
         $this->cache = $cache;
@@ -77,12 +72,6 @@ class OrderSearch extends Order
     public function setParams(array $params): OrderSearch
     {
         $this->params = $params;
-        return $this;
-    }
-
-    public function setPrevParams(array $prevParams): OrderSearch
-    {
-        $this->prevParams = $prevParams;
         return $this;
     }
 
@@ -120,14 +109,9 @@ class OrderSearch extends Order
 
         $this->filtersState = new OrderSearchFiltersState();
         foreach ($this->filters as $filter) {
+
             $filter->setParams($this->params);
-            $filter->setPrevParams($this->prevParams);
-
             $filter->modifyState($this->filtersState);
-        }
-
-        foreach ($this->filters as $filter) {
-            $filter->rejectSomeFilters($this->filtersState);
         }
 
         // grid filtering conditions

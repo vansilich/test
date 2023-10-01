@@ -12,7 +12,6 @@ class ServiceFilter implements FilterInterface
 {
 
     private array $params;
-    private array $prevParams = [];
 
     /**
      * @inheritDoc
@@ -20,15 +19,6 @@ class ServiceFilter implements FilterInterface
     public function setParams(array $params): ServiceFilter
     {
         $this->params = $params;
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function setPrevParams(array $prevParams): ServiceFilter
-    {
-        $this->prevParams = $prevParams;
         return $this;
     }
 
@@ -43,12 +33,6 @@ class ServiceFilter implements FilterInterface
 
         $state->setByService($this->params['byService']);
     }
-
-    /**
-     * @inheritDoc
-     */
-    public function rejectSomeFilters(OrderSearchFiltersState $state): void
-    {}
 
     /**
      * @inheritDoc

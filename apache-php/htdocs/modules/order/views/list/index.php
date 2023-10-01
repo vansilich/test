@@ -19,11 +19,16 @@ $this->params['breadcrumbs'][] = $this->title;
 
 $filterStateAttrs = $searchModel->getFiltersState()->attributes;
 $formName = $searchModel->getFiltersState()->formName();
+
+$currStatusForUrl = null;
+if ($filterStateAttrs['byStatus'] !== null) {
+    $currStatusForUrl = OrderStatus::matchFromInt((int)$filterStateAttrs['byStatus'])->getUrlSafeText();
+}
 ?>
 
 <script>
     // cleanup duplicates in query params without reloading page
-    let url = '<?= Url::current([$formName => $filterStateAttrs]); ?>';
+    let url = '<?= Url::to(["list/$currStatusForUrl", $formName => $filterStateAttrs]); ?>';
     window.history.replaceState(null, document.title, url);
 </script>
 
@@ -32,11 +37,13 @@ $formName = $searchModel->getFiltersState()->formName();
     <ul class="nav nav-tabs p-b">
         <?php foreach ($searchModel->filters[$searchModel::BY_STATUS]->getVariants() as $item): ?>
 
-            <?php $status = OrderStatus::matchFromInt((int)$filterStateAttrs['byStatus']) ?>
-            <li class="<?= (string)$item['value'] === $status->getUrlSafeText() ? 'active' : '' ?>">
+            <li class="<?= $item['value'] === $currStatusForUrl ? 'active' : '' ?>">
                 <?= Html::a(
                         $item['title'],
-                        Url::to(['list/' . $item['value'], 'page' => 1, $formName => $filterStateAttrs])
+                        Url::to(['list/' . $item['value'], $formName => [
+                            'searchText' => $filterStateAttrs['searchText'],
+                            'searchCategory' => $filterStateAttrs['searchCategory'],
+                        ]])
                     )
                 ?>
             </li>
@@ -46,12 +53,10 @@ $formName = $searchModel->getFiltersState()->formName();
             <form action="<?= Url::to(['index']) ?>" method="get" class="form-inline">
                 <div class="input-group">
 
-                    <?php foreach ($filterStateAttrs as $name => $value): ?>
-                        <?= Html::hiddenInput($formName . '[' . $name . ']', $value) ?>
-                    <?php endforeach; ?>
+                    <?= Html::hiddenInput($formName . '[byStatus]', $filterStateAttrs['byStatus']) ?>
 
                     <?= Html::textInput(
-                        $formName . '[searchText]',
+                            $formName . '[searchText]',
                             $filterStateAttrs['searchText'],
                             ['class' => 'form-control', 'placeholder' => Yii::t('app', 'Search orders')]
                         )
@@ -102,7 +107,8 @@ $formName = $searchModel->getFiltersState()->formName();
                     'itemView' => $this->render('_dropdown-sort-by-service', [
                         'searchModel' => $searchModel,
                         'formName' => $formName,
-                        'filterStateAttrs' => $filterStateAttrs
+                        'filterStateAttrs' => $filterStateAttrs,
+                        'currStatusForUrl' => $currStatusForUrl,
                     ]),
                 ]),
                 'headerOptions' => ['class' => 'dropdown-th'],
@@ -127,7 +133,8 @@ $formName = $searchModel->getFiltersState()->formName();
                     'itemView' => $this->render('_dropdown-sort-by-mode', [
                         'searchModel' => $searchModel,
                         'formName' => $formName,
-                        'filterStateAttrs' => $filterStateAttrs
+                        'filterStateAttrs' => $filterStateAttrs,
+                        'currStatusForUrl' => $currStatusForUrl,
                     ]),
                 ]),
                 'headerOptions' => ['class' => 'dropdown-th'],
@@ -148,7 +155,7 @@ $formName = $searchModel->getFiltersState()->formName();
     ]); ?>
 
     <div class="col-sm-12" style="display: flex; align-items: end; flex-direction: column;">
-        <?php $form = ActiveForm::begin(['method' => 'post', 'action' => Url::to(['as-csv'], true)]) ?>
+        <?php $form = ActiveForm::begin(['method' => 'post', 'action' => Url::to(['as-csv'])]) ?>
 
             <?php foreach ($filterStateAttrs as $key => $_): ?>
                 <?= $form->field($searchModel->getFiltersState(), $key,

@@ -9,6 +9,7 @@ use yii\helpers\Url;
  * @var OrderSearch $searchModel
  * @var string $formName
  * @var array $filterStateAttrs
+ * @var ?string $currStatusForUrl
  */
 ?>
 
@@ -16,7 +17,11 @@ use yii\helpers\Url;
     <?=
         Html::a(
             Yii::t('app', 'All'),
-            Url::current(['page' => 1, $formName => [...$filterStateAttrs, 'byMode' => null ]])
+            Url::to(["list/$currStatusForUrl", $formName => [
+                'searchText' => $filterStateAttrs['searchText'],
+                'searchCategory' => $filterStateAttrs['searchCategory'],
+                'byService' => $filterStateAttrs['byService'],
+            ]])
         )
     ?>
 </li>
@@ -28,7 +33,14 @@ use yii\helpers\Url;
             $textValue = OrderMode::matchFromInt($value)->getText();
             $textValue = Html::encode(mb_ucfirst($textValue, mb_detect_encoding($textValue)));
 
-            echo Html::a($textValue, Url::current(['page' => 1, $formName => [...$filterStateAttrs, 'byMode' => $value ]]))
+            echo Html::a(
+                $textValue, 
+                Url::to(["list/$currStatusForUrl", $formName => [
+                    'searchText' => $filterStateAttrs['searchText'],
+                    'searchCategory' => $filterStateAttrs['searchCategory'],
+                    'byService' => $filterStateAttrs['byService'],
+                    'byMode' => $value
+                ]]))
         ?>
 
     </li>

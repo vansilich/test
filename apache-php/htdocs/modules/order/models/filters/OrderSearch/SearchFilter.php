@@ -20,7 +20,6 @@ class SearchFilter implements FilterInterface
     private array $categories;
 
     private array $params;
-    private array $prevParams = [];
 
     public function __construct()
     {
@@ -53,22 +52,13 @@ class SearchFilter implements FilterInterface
     /**
      * @inheritDoc
      */
-    public function setPrevParams(array $prevParams): SearchFilter
-    {
-        $this->prevParams = $prevParams;
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function modifyState(OrderSearchFiltersState $state): void
     {
         if (!isset($this->params['searchText']) || $this->params['searchText'] === '') {
             return;
         }
 
-        $state->setSearchText($this->params['searchText']);
+        $state->setSearchText(trim($this->params['searchText']));
 
         if (!isset($this->params['searchCategory'])) {
             $state->setSearchCategory(static::BY_ORDER_ID);
@@ -82,30 +72,6 @@ class SearchFilter implements FilterInterface
         $state->setSearchCategory($this->params['searchCategory']);
     }
 
-    /**
-     * Reject Service and Mode filters if current filter changed
-     *
-     * @inheritDoc
-     */
-    public function rejectSomeFilters(OrderSearchFiltersState $state): void
-    {
-        if (empty($this->prevParams)){
-            return;
-        }
-
-        if ($state->searchText === null || $state->searchText === '') {
-            if (isset($this->prevParams['searchText']) && $this->prevParams['searchText'] !== '') {
-                $state->setByService(null);
-                $state->setByMode(null);
-            }
-            return;
-        }
-
-        if (!isset($this->prevParams['searchText']) || $this->prevParams['searchText'] !== $state->searchText) {
-            $state->setByService(null);
-            $state->setByMode(null);
-        }
-    }
 
     /**
      * @inheritDoc

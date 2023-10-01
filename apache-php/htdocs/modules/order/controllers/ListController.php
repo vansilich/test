@@ -12,9 +12,7 @@ use yii\base\Event;
 use yii\base\InvalidConfigException;
 use yii\caching\CacheInterface;
 use yii\filters\VerbFilter;
-use yii\helpers\Url;
 use yii\web\Controller;
-use yii\web\Request;
 use yii\web\Response;
 
 /**
@@ -65,17 +63,6 @@ class ListController extends Controller
             }
         }
         $searchModel->setParams($params);
-
-        $prevParams = [];
-        // parse query params if request comes from the same page
-        $referrer = Yii::$app->request->referrer;
-        if ($referrer !== null) {
-            $prevParsed = parse_url($referrer);
-            if (isRequestFromSameCanonical(Yii::$app->request->absoluteUrl, $referrer) && isset($prevParsed['query'])) {
-                parse_str($prevParsed['query'], $prevParams);
-            }
-        }
-        $searchModel->setPrevParams($prevParams[$formName] ?? []);
 
         $dataProvider = $searchModel->search();
 
